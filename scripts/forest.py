@@ -120,7 +120,6 @@ def get_plants(session,user_id):
 
 def login(session,username,password):
     data = {"session": {"email": username, "password": password}}
-    print(data)
     r = session.post(FOREST_LOGIN_URL, headers=headers, json=data)
     user_id = r.json().get("user_id")
     return user_id
