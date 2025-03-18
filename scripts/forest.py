@@ -179,13 +179,10 @@ def insert_to_forest(session,user_id):
             },
             "seekruid": user_id
         }
-        print(data)
-        print("https://forest-china.upwardsware.com/api/v1/plants?seekruid={user_id}".format(
-        user_id=user_id))
         r = session.post("https://forest-china.upwardsware.com/api/v1/plants?seekruid={user_id}".format(
         user_id=user_id),json=data, headers=headers)
         id = r.json().get("id")
-        properties = utils.get_properties({"id":id}, plants_properties_type_dict)
+        properties = utils.get_properties({"id":str(id)}, plants_properties_type_dict)
         notion_helper.get_date_relation(properties, start_time)
         notion_helper.update_page(item.get("id"),properties)
 

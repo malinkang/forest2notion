@@ -120,7 +120,6 @@ class NotionHelper:
         return result
 
     def search_database(self, block_id):
-        print(f"search_database {block_id}")
         children = self.client.blocks.children.list(block_id=block_id)["results"]
         # 遍历子块
         for child in children:
