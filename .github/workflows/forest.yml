@@ -10,9 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
         NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
-        NOTION_MOVIE_URL: ${{ secrets.NOTION_MOVIE_URL }}
-        NOTION_BOOK_URL: ${{ secrets.NOTION_BOOK_URL }}
-        DOUBAN_NAME: ${{ secrets.DOUBAN_NAME }}
+        NOTION_PAGE: ${{ secrets.NOTION_PAGE }}
         YEAR: ${{ vars.YEAR }}
         REPOSITORY: ${{ github.repository }}
     steps:
