@@ -17,9 +17,6 @@ def get_file():
         return None
     
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    options = parser.parse_args()
-    type = options.type
     notion_helper = NotionHelper()
     image_file = get_file()
     if image_file:
