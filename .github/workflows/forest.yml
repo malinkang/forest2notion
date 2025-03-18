@@ -43,4 +43,4 @@ jobs:
             echo "Renamed file to $RANDOM_FILENAME"
       - name: udpate heatmap 
         run: |
-            python -u scripts/update_heatmap.py "book"
+            python -u scripts/update_heatmap.py
