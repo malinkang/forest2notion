@@ -100,7 +100,7 @@ def get_plants(session,user_id):
             item["树"] = tree_relation_ids
         start_time = pendulum.parse(plant.get("start_time"), tz='UTC')
         end_time = pendulum.parse(plant.get("end_time"), tz='UTC').int_timestamp
-        if start_time.replace(second=0) <= lastest:
+        if start_time.replace(second=0).int_timestamp <= lastest:
             continue;
         item["开始时间"] = start_time.int_timestamp
         item["结束时间"] = end_time
