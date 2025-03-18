@@ -286,6 +286,10 @@ def get_property_value(property):
             return None
     elif type == "date":
         return str_to_timestamp(content.get("start"))
+    elif type == "rollup":
+        if content.get("type") == "array":
+            arr =  content.get(content.get("type"))
+            return [x.get(x.get("type")) for x in arr]
     else:
         return content
 

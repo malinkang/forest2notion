@@ -1,3 +1,9 @@
+from utils import get_icon
+from config import (
+    plants_properties_type_dict,
+    TAG_ICON_URL,
+    USER_ICON_URL,
+)
 from datetime import datetime
 import json
 import pendulum
@@ -8,15 +14,6 @@ import utils
 from dotenv import load_dotenv
 
 load_dotenv()
-
-from config import (
-    plants_properties_type_dict,
-    TAG_ICON_URL,
-    USER_ICON_URL,
-)
-from utils import get_icon
-
-
 
 
 FOREST_URL_HEAD = "https://forest-china.upwardsware.com"
@@ -41,12 +38,10 @@ s = requests.Session()
 auth = ("2ef95512ce5b1528809f9a03a68e02b1", "api_token")
 
 
-def get_tags(session,user_id):
+def get_tags(session, user_id):
     dict = {}
     r = session.get(FOREST_TAG_URL.format(id=user_id), headers=headers)
     tags = r.json().get("tags")
-    with open('tags.json', 'w', encoding='utf-8') as f:
-        json.dump(r.json(), f, ensure_ascii=False, indent=4)
     for tag in tags:
         id = tag.get("tag_id")
         name = tag.get("title")
@@ -56,7 +51,7 @@ def get_tags(session,user_id):
     return dict
 
 
-def get_plants_type(session,user_id):
+def get_plants_type(session, user_id):
     """
     获取所有的植物类型
     """
@@ -73,16 +68,17 @@ def get_plants_type(session,user_id):
     return {x.get("id"): x for x in products}
 
 
-def get_plants(session,user_id):
-    r = session.get(FOREST_CLAENDAR_URL.format(user_id=user_id), headers=headers)
+def get_plants(session, user_id):
+    r = session.get(FOREST_CLAENDAR_URL.format(
+        user_id=user_id), headers=headers)
     plants = r.json()
     plants.sort(key=lambda plant: plant.get("start_time"))
     for plant in plants:
         item = {}
         item["id"] = str(plant.get("id"))
         tag = forest_tag_dict[plant.get("tag")]
-        emoji,tag=utils.split_emoji_from_string(tag)
-        item["标题"]= tag
+        emoji, tag = utils.split_emoji_from_string(tag)
+        item["标题"] = tag
         item["分类"] = [
             notion_helper.get_relation_id(
                 tag,
@@ -94,14 +90,16 @@ def get_plants(session,user_id):
         tree_relation_ids = []
         for tree in plant.get("trees"):
             t = forest_tree_dict.get(tree.get("tree_type"))
-            if t :
-                tree_relation_ids.append(notion_helper.get_relation_id(t.get("title"),notion_helper.tree_database_id,icon=get_icon(t.get("icon_url")),properties={"id": {"number": tree.get("tree_type")}}))
+            if t:
+                tree_relation_ids.append(notion_helper.get_relation_id(t.get("title"), notion_helper.tree_database_id, icon=get_icon(
+                    t.get("icon_url")), properties={"id": {"number": tree.get("tree_type")}}))
         if tree_relation_ids:
             item["树"] = tree_relation_ids
         start_time = pendulum.parse(plant.get("start_time"), tz='UTC')
-        end_time = pendulum.parse(plant.get("end_time"), tz='UTC').int_timestamp
+        end_time = pendulum.parse(
+            plant.get("end_time"), tz='UTC').int_timestamp
         if start_time.replace(second=0).int_timestamp <= lastest:
-            continue;
+            continue
         item["开始时间"] = start_time.int_timestamp
         item["结束时间"] = end_time
         note = plant.get("note")
@@ -114,19 +112,21 @@ def get_plants(session,user_id):
             "type": "database_id",
         }
         notion_helper.create_page(
-            parent=parent, properties=properties, icon={"type": "emoji", "emoji": emoji}
+            parent=parent, properties=properties, icon={
+                "type": "emoji", "emoji": emoji}
         )
 
 
-def login(session,username,password):
+def login(session, username, password):
     data = {"session": {"email": username, "password": password}}
     r = session.post(FOREST_LOGIN_URL, headers=headers, json=data)
     user_id = r.json().get("user_id")
     return user_id
 
+
 def get_lastest():
     filter = {"property": "id", "rich_text": {"is_not_empty": True}}
-    sorts=[{"property": "开始时间", "direction": "descending"}]
+    sorts = [{"property": "开始时间", "direction": "descending"}]
     result = notion_helper.query(
         database_id=notion_helper.plant_database_id,
         page_size=1,
@@ -140,6 +140,55 @@ def get_lastest():
         return 0
 
 
+def get_all():
+    filter = {"property": "id", "rich_text": {"is_empty": True}}
+    result = notion_helper.query_all_by_filter(
+        database_id=notion_helper.plant_database_id,
+        filter=filter
+    )
+    return result
+
+def insert_to_forest(session,user_id):
+    for item in get_all():
+        properties = item.get("properties")
+        start_time = pendulum.from_timestamp(
+            utils.get_property_value(properties.get("开始时间")), tz="Asia/Shanghai"
+        )
+        end_time = pendulum.from_timestamp(
+            utils.get_property_value(properties.get("结束时间")), tz="Asia/Shanghai"
+        )
+        mode = "countdown"
+        trees = utils.get_property_value(properties.get("树id"))
+        tags = utils.get_property_value(properties.get("分类id"))
+        trees = [{"plant_id":-1,"tree_type":tree,"is_dead":False,"phase":0} for tree in trees]
+        title = utils.get_property_value(properties.get("标题"))
+        data = {
+            "plant": {
+                "id": -1,
+                "start_time": start_time.isoformat(),
+                "end_time": end_time.isoformat(),
+                "mode": mode,
+                "is_success": True,
+                "die_reason": '',
+                "tag": tags[0],
+                "note": title,
+                "has_left": False,
+                "deleted": False,
+                "room_id": -1,
+                "trees": trees
+            },
+            "seekruid": user_id
+        }
+        print(data)
+        print("https://forest-china.upwardsware.com/api/v1/plants?seekruid={user_id}".format(
+        user_id=user_id))
+        r = session.post("https://forest-china.upwardsware.com/api/v1/plants?seekruid={user_id}".format(
+        user_id=user_id),json=data, headers=headers)
+        id = r.json().get("id")
+        properties = utils.get_properties({"id":id}, plants_properties_type_dict)
+        notion_helper.get_date_relation(properties, start_time)
+        notion_helper.update_page(item.get("id"),properties)
+
 if __name__ == "__main__":
     notion_helper = NotionHelper()
     config = notion_helper.config
@@ -151,3 +200,4 @@ if __name__ == "__main__":
     forest_tag_dict = get_tags(session,user_id)
     forest_tree_dict = get_plants_type(session,user_id)
     get_plants(session,user_id)
+    insert_to_forest(session,user_id)

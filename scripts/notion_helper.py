@@ -254,7 +254,7 @@ class NotionHelper:
 
 
     @retry(stop_max_attempt_number=3, wait_fixed=5000)
-    def query_all_by_book(self, database_id, filter):
+    def query_all_by_filter(self, database_id, filter):
         results = []
         has_more = True
         start_cursor = None
