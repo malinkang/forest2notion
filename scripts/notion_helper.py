@@ -313,3 +313,7 @@ class NotionHelper:
                 self.get_day_relation_id(date),
             ]
         )
+    @retry(stop_max_attempt_number=3, wait_fixed=5000)
+    def update_heatmap(self, block_id, url):
+        # 更新 image block 的链接
+        return self.client.blocks.update(block_id=block_id, embed={"url": url})
